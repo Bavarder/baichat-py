@@ -5,7 +5,7 @@
 You can install it from PyPi
 
 ``` shell
-pip install baichat_py
+pip install baichat-py
 ```
 
 ## Usage
