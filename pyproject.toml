@@ -1,0 +1,35 @@
+[tool.poetry]
+name = "baichat-py"
+version = "0.1.0"
+description = ""
+authors = ["0xMRTT <0xMRTT@proton.me>"]
+maintainers = ["0xMRTT <0xMRTT@proton.me>"]
+readme = "README.md"
+packages = [{include = "baichat_py"}]
+license = "GPL-3.0-or-later"
+homepage = "https://github.com/Bavarder/baichat-py"
+documentation = "https://github.com/Bavarder/baichat-py"
+keywords = ["openai", "gpt3", "baichat", "chat"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Utilities",
+]
+repository = "https://github.com/Bavarder/baichat-py"
+
+[tool.poetry.urls]
+"Bug Tracker" = "https://github.com/Bavarder/baichat-py/issues"
+
+
+[tool.poetry.dependencies]
+python = "^3.10"
+aiohttp = "^3.8.4"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
