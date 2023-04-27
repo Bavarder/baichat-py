@@ -1,4 +1,4 @@
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 __version_tuple__ = tuple(map(int, __version__.split(".")))
 
 
@@ -74,11 +74,15 @@ class BAIChat:
         config_file: Path = None,
         api_url: str = None,
         loop: asyncio.AbstractEventLoop = None,
+        sync: bool = False,
     ):
         self.url: str = self.URL if url is None else url
         self.api_url: str = self.API_URL if api_url is None else api_url
 
-        self.loop = asyncio.get_event_loop() if loop is None else loop
+        if not sync:
+            self.loop = asyncio.get_event_loop() if loop is None else loop
+        else:
+            self.loop = None
 
         self.config_file: Path = (
             self.CONFIG_FILE if config_file is None else config_file
