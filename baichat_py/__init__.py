@@ -1,4 +1,4 @@
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __version_tuple__ = tuple(map(int, __version__.split(".")))
 
 
@@ -9,6 +9,7 @@ import random
 import string
 import aiohttp
 import asyncio
+import http.client
 
 
 class BAIChatDelta:
@@ -148,6 +149,35 @@ class BAIChat:
         async with aiohttp.ClientSession(headers=headers) as session:
             return await self.get_data_async(session, prompt)
 
+    def sync_ask(self, prompt: str) -> BAIChatResponse:
+        headers = {
+            "Accept": "application/json, text/plain, */*",
+            "Accept-Language": "en-US,en;q=0.5",
+            "Host": "chatbot.theb.ai",
+            "Origin": "https://chatbot.theb.ai",
+            "Referer": "https://chatbot.theb.ai",
+            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/112.0",
+            "Content-Type": "application/json",
+        }
+        conn = http.client.HTTPSConnection('chatbot.theb.ai') 
+        prompt = prompt.replace('"', "\n")
+
+        if self.chat_id == "":
+            self.chat_id = f"chatcmpl-{self.get_random_string()}"
+
+        payload = json.dumps(
+            {"prompt": prompt, "options": {"parentMessageId": self.chat_id}}
+        )
+        conn.request('POST', '/api/chat-process', payload,  headers=headers)
+
+        response = conn.getresponse()
+        result = response.read().decode('utf-8')
+        result = result.splitlines()
+        result = BAIChatResponse([json.loads(line) for line in result])
+
+        self.chat_id = result.id
+        return result
+
     def ask(self, prompt: str) -> BAIChatResponse:
         return self.loop.run_until_complete(self.async_ask(prompt))
 
@@ -159,7 +189,5 @@ class BAIChat:
 
 
 if __name__ == "__main__":
-    with BAIChat() as (loop, chat):
-        hello = chat.ask("Hi")
-
-        print(hello.text)
+    chat = BAIChat()
+    print(chat.sync_ask("Hello, how are you?").text)

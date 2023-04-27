@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "baichat-py"
-version = "0.1.0"
+version = "0.2.0"
 description = ""
 authors = ["0xMRTT <0xMRTT@proton.me>"]
 maintainers = ["0xMRTT <0xMRTT@proton.me>"]

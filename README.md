@@ -54,3 +54,11 @@ with BAIChat() as (loop, chat):
 # => Hello! How may I assist you today?
 ```
 
+### Sync
+
+``` python
+chat = BAIChat()
+print(chat.sync_ask("Hello, how are you?").text)
+
+# => Hello! As an AI language model, I don't have feelings, but I'm functioning properly and ready to assist you. How may I help you today?
+```
