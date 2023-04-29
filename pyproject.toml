@@ -28,8 +28,15 @@ repository = "https://github.com/Bavarder/baichat-py"
 [tool.poetry.dependencies]
 python = "^3.10"
 aiohttp = "^3.8.4"
+requests = "^2.29.0"
 
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[[tool.poetry.source]]
+name = "codeberg"
+url = "https://codeberg.org/api/packages/Bavarder/pypi"
+default = false
+secondary = true
