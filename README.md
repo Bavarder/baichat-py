@@ -2,10 +2,16 @@
 
 ## Installation
 
-You can install it from PyPi
+### Pypi
 
 ``` shell
 pip install baichat-py
+```
+
+### Codeberg
+
+``` shell
+pip install --index-url https://codeberg.org/api/packages/Bavarder/pypi/simple/ baichat-py
 ```
 
 ## Usage
