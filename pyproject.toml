@@ -7,8 +7,8 @@ maintainers = ["0xMRTT <0xMRTT@proton.me>"]
 readme = "README.md"
 packages = [{include = "baichat_py"}]
 license = "GPL-3.0-or-later"
-homepage = "https://github.com/Bavarder/baichat-py"
-documentation = "https://github.com/Bavarder/baichat-py"
+homepage = "https://codeberg.org/Bavarder/baichat-py"
+documentation = "https://codeberg.org/Bavarder/baichat-py"
 keywords = ["openai", "gpt3", "baichat", "chat"]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -22,7 +22,7 @@ classifiers = [
 repository = "https://github.com/Bavarder/baichat-py"
 
 [tool.poetry.urls]
-"Bug Tracker" = "https://github.com/Bavarder/baichat-py/issues"
+"Bug Tracker" = "https://codeberg.org/Bavarder/baichat-py/issues"
 
 
 [tool.poetry.dependencies]
