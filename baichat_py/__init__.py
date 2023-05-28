@@ -1,197 +1,97 @@
-__version__ = "0.2.1"
+__version__ = "0.3.0"
 __version_tuple__ = tuple(map(int, __version__.split(".")))
 
+from http import client
+from json import dumps, loads
+from queue import Empty, Queue
+from random import choice
+from re import findall
+from string import ascii_letters
+from threading import Thread
+from typing import Generator, Optional
 
-import os
-from pathlib import Path
-import json
-import random
-import string
-import aiohttp
-import asyncio
-import http.client
+from curl_cffi import requests
+from fake_useragent import UserAgent
 
+class CompletionError(Exception):
+    pass
 
-class BAIChatDelta:
-    def __init__(self, data: dict):
-        self.data = data
+class Completion:
+    part1 = '{"role":"assistant","id":"chatcmpl'
+    part2 = '"},"index":0,"finish_reason":null}]}}'
+    regex = rf"{part1}(.*){part2}"
 
-    @property
-    def text(self) -> str:
-        return self.data["text"]
+    timer = None
+    message_queue = Queue()
+    stream_completed = False
+    last_msg_id = None
 
-    @property
-    def id(self) -> str:
-        return self.data["id"]
+    @staticmethod
+    def get_random_string(length: Optional[int] = 15) -> str:
+        """Internal method for generating a random string for the first message id"""
+        return "".join(choice(ascii_letters) for i in range(length))
 
-    @property
-    def model(self) -> str:
-        return self.data["detail"]["model"]
-
-    @property
-    def delta(self) -> str:
-        return self.data["delta"]
-
-    @property
-    def detail(self) -> str:
-        return self.data["detail"]
-
-
-class BAIChatResponse:
-    def __init__(self, data: list):
-        self.data = data
-
-        for i in range(len(self.data)):
-            self.data[i] = BAIChatDelta(self.data[i])
-
-    @property
-    def text(self) -> str:
-        return self.data[-1].text
-
-    @property
-    def id(self) -> str:
-        return self.data[-1].id
-
-    @property
-    def model(self) -> str:
-        return self.data[-1].model
-
-    def __iter__(self) -> iter:
-        return iter(self.data)
-
-    def __next__(self) -> next:
-        return next(self.data)
-
-
-class BAIChat:
-    URL = "https://chatbot.theb.ai/"
-    API_URL = "https://chatbot.theb.ai/api/chat-process"
-    CONFIG_FILE = Path(os.path.expanduser("~/.config/baichat/config.json"))
-
-    def __init__(
-        self,
-        url: str = None,
-        config_file: Path = None,
-        api_url: str = None,
-        loop: asyncio.AbstractEventLoop = None,
-        sync: bool = False,
+    @staticmethod
+    def request(
+        prompt: str, proxies: Optional[dict[str, str]] = None,
     ):
-        self.url: str = self.URL if url is None else url
-        self.api_url: str = self.API_URL if api_url is None else api_url
-
-        if not sync:
-            self.loop = asyncio.get_event_loop() if loop is None else loop
-        else:
-            self.loop = None
-
-        self.config_file: Path = (
-            self.CONFIG_FILE if config_file is None else config_file
-        )
-
-        self.create_config_dir_if_doesnt_exist()
-
-        self.config: dict | bool = self.load_config()
-
-        if self.config:
-            self.chat_id: str = self.config["chat_id"]
-        else:
-            self.config: dict = {}
-            self.chat_id: str = ""
-
-        self.save_config()
-
-    def create_config_dir_if_doesnt_exist(self) -> None:
-        # Create a directory to store the config file if it doesn't exist
-        self.config_file.parent.mkdir(parents=True, exist_ok=True)
-
-    def load_config(self) -> dict | bool:
-        if self.config_file.exists():
-            with open(self.config_file, "r") as f:
-                return json.load(f)
-        else:
-            return False
-
-    def save_config(self) -> None:
-        self.config["chat_id"] = self.chat_id
-
-        self.create_config_dir_if_doesnt_exist()
-
-        with open(self.config_file, "w") as f:
-            json.dump(self.config, f)
-
-    def get_random_string(self, length: int = 15) -> str:
-        return "".join(random.choice(string.ascii_letters) for i in range(length))
-
-    async def get_data_async(self, session, prompt: str) -> BAIChatResponse:
-        prompt = prompt.replace('"', "\n")
-
-        if self.chat_id == "":
-            self.chat_id = f"chatcmpl-{self.get_random_string()}"
-
-        payload = json.dumps(
-            {"prompt": prompt, "options": {"parentMessageId": self.chat_id}}
-        )
-
-        async with session.post(self.api_url, data=payload) as resp:
-            result = await resp.text()
-            result = result.splitlines()
-            result = BAIChatResponse([json.loads(line) for line in result])
-
-            self.chat_id = result.id
-            return result
-
-    async def async_ask(self, prompt: str) -> BAIChatResponse:
         headers = {
             "Accept": "application/json, text/plain, */*",
             "Accept-Language": "en-US,en;q=0.5",
             "Host": "chatbot.theb.ai",
             "Origin": "https://chatbot.theb.ai",
             "Referer": "https://chatbot.theb.ai",
-            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/112.0",
+            "User-Agent": UserAgent().random,
             "Content-Type": "application/json",
         }
-        async with aiohttp.ClientSession(headers=headers) as session:
-            return await self.get_data_async(session, prompt)
 
-    def sync_ask(self, prompt: str) -> BAIChatResponse:
-        headers = {
-            "Accept": "application/json, text/plain, */*",
-            "Accept-Language": "en-US,en;q=0.5",
-            "Host": "chatbot.theb.ai",
-            "Origin": "https://chatbot.theb.ai",
-            "Referer": "https://chatbot.theb.ai",
-            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/112.0",
-            "Content-Type": "application/json",
-        }
-        conn = http.client.HTTPSConnection('chatbot.theb.ai') 
-        prompt = prompt.replace('"', "\n")
+        if not Completion.last_msg_id:
+            Completion.last_msg_id = f"chatcmpl-{Completion.get_random_string()}"
 
-        if self.chat_id == "":
-            self.chat_id = f"chatcmpl-{self.get_random_string()}"
-
-        payload = json.dumps(
-            {"prompt": prompt, "options": {"parentMessageId": self.chat_id}}
+        payload = dumps(
+            {"prompt": prompt, "options": {"parentMessageId": Completion.last_msg_id}}
         )
-        conn.request('POST', '/api/chat-process', payload,  headers=headers)
 
-        response = conn.getresponse()
-        result = response.read().decode('utf-8')
-        result = result.splitlines()
-        result = BAIChatResponse([json.loads(line) for line in result])
+        response = requests.post("https://chatbot.theb.ai/api/chat-process", headers=headers, data=payload, impersonate="chrome101", content_callback=Completion.handle_stream_response, proxies=proxies)
 
-        self.chat_id = result.id
-        return result
+        if response.status_code != 200:
+            raise CompletionError()
+        Completion.stream_completed = True
 
-    def ask(self, prompt: str) -> BAIChatResponse:
-        return self.loop.run_until_complete(self.async_ask(prompt))
+    @staticmethod
+    def create(prompt: str, proxy: Optional[str] = None) -> Generator[str, None, None]:
+        Completion.stream_completed = False
 
-    def __enter__(self):
-        return (self.loop, self)
+        Thread(target=Completion.request, args=[prompt, proxy]).start()
 
-    def __exit__(self, exc_type, exc_value, traceback) -> None:
-        self.save_config()
+        while not Completion.stream_completed or not Completion.message_queue.empty():
+            try:
+                message = Completion.message_queue.get(timeout=0.01)
+                for message in findall(Completion.regex, message):
+                    message_json = loads(Completion.part1 + message + Completion.part2)
+                    Completion.last_msg_id = message_json["id"]
+                    yield message_json["delta"]
+
+            except Empty:
+                pass
+
+    @staticmethod
+    def handle_stream_response(response):
+        Completion.message_queue.put(response.decode("utf-8"))
+
+    @staticmethod
+    def get_response(prompt: str, proxy: Optional[str] = None) -> str:
+        response_list = []
+        for message in Completion.create(prompt, proxy):
+            response_list.append(message)
+        return "".join(response_list)
+
+        Completion.message_queue.put(response.decode(errors="replace"))
 
 
 if __name__ == "__main__":
-    chat = BAIChat()
-    print(chat.sync_ask("Hello, how are you?").text)
+    while True:
+        x = input("> ")
+        for token in Completion.create(x):
+            print(token, end="", flush=True)
+        print("")
