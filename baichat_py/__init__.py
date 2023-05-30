@@ -77,7 +77,10 @@ class Completion:
 
     @staticmethod
     def handle_stream_response(response):
-        Completion.message_queue.put(response.decode("utf-8"))
+        try:
+            Completion.message_queue.put(response.decode("utf-8"))
+        except UnicodeDecodeError:
+            Completion.message_queue.put(response.decode("latin-1"))
 
     @staticmethod
     def get_response(prompt: str, proxy: Optional[str] = None) -> str:
