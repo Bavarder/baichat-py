@@ -33,7 +33,7 @@ class Completion:
 
     @staticmethod
     def request(
-        prompt: str, proxies: Optional[dict[str, str]] = None,
+        prompt: str, proxies: Optional[dict[str, str]] = None, timeout: int = 120,
     ):
         headers = {
             "Accept": "application/json, text/plain, */*",
@@ -52,7 +52,7 @@ class Completion:
             {"prompt": prompt, "options": {"parentMessageId": Completion.last_msg_id}}
         )
 
-        response = requests.post("https://chatbot.theb.ai/api/chat-process", headers=headers, data=payload, impersonate="chrome101", content_callback=Completion.handle_stream_response, proxies=proxies)
+        response = requests.post("https://chatbot.theb.ai/api/chat-process", headers=headers, data=payload, impersonate="chrome101", content_callback=Completion.handle_stream_response, proxies=proxies,timeout=timeout)
 
         if response.status_code != 200:
             raise CompletionError()
