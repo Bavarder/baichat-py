@@ -52,7 +52,7 @@ class Completion:
             {"prompt": prompt, "options": {"parentMessageId": Completion.last_msg_id}}
         )
 
-        response = requests.post("https://chatbot.theb.ai/api/chat-process", headers=headers, data=payload, impersonate="chrome101", content_callback=Completion.handle_stream_response, proxies=proxies)
+        response = requests.post("https://chatbot.theb.ai/api/chat-process", headers=headers, data=payload, impersonate="chrome101", content_callback=Completion.handle_stream_response, proxies=proxies,timeout=120)
 
         if response.status_code != 200:
             raise CompletionError()
